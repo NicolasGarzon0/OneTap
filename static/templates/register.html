@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Register</title>
+  <link rel="stylesheet" href="/static/css/register.css" />
+  <style>
+    .error {
+      color: red;
+      font-weight: bold;
+      text-align: center;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <a class="brand" href="/checkin"> OneTap</a>
+  </div>
+
+  <div class="register-box">
+    <h2>Create an Account</h2>
+    <form id="register-form">
+      <input type="text" id="username" placeholder="Username" required />
+      <input type="email" id="email" placeholder="Email" required />
+      <input type="password" id="password" placeholder="Password" required />
+      <button type="submit">Register</button>
+      <div class="link"><a href="/login">Already have an account?</a></div>
+    </form>
+    <p id="register-response" class="error" style="display: none;"></p>
+  </div>
+
+  <script>
+    document.getElementById("register-form").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const username = document.getElementById("username").value;
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const responseBox = document.getElementById("register-response");
+
+      try {
+        const res = await fetch("/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, email, password })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          window.location.href = "/admin";
+        } else {
+          let message = "";
+
+          if (Array.isArray(data.detail)) {
+            message = data.detail
+              .map(err => {
+                const field = err.loc?.[err.loc.length - 1];
+                return `${field}: ${err.msg}`;
+              })
+              .join("<br>");
+          } else if (typeof data.detail === "string") {
+            message = data.detail;
+          } else {
+            message = "Registration failed.";
+          }
+
+          responseBox.innerHTML = message;
+          responseBox.style.display = "block";
+          responseBox.className = "error";
+
+          setTimeout(() => {
+            responseBox.style.display = "none";
+          }, 4000);
+        }
+      } catch (err) {
+        responseBox.innerText = "An error occurred.";
+        responseBox.className = "error";
+        responseBox.style.display = "block";
+
+        setTimeout(() => {
+          responseBox.style.display = "none";
+        }, 4000);
+      }
+    });
+  </script>
+</body>
+</html>

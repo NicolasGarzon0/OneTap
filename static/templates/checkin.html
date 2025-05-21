@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="/static/css/checkin.css" />
+  <title>OneTap Attendance</title>
+</head>
+<body>
+  <div class="top-bar">
+    <div class="brand"> OneTap</div>
+    <a href="/login">Login</a>
+  </div>
+
+  <h1>Member Check-In</h1>
+
+  <label for="name">Name:</label>
+  <input type="text" id="name" placeholder="Enter your name" />
+
+  <label for="email">Email:</label>
+  <input type="email" id="email" placeholder="Enter your email" />
+
+  <label for="code">Code:</label>
+  <input type="text" id="code" value="{{ code }}" placeholder="Meeting code" />
+
+  <button onclick="submitCheckIn()"> Check In</button>
+
+  <p id="response"></p>
+
+  <script>
+  async function submitCheckIn() {
+    const button = document.querySelector("button");
+    button.disabled = true;
+
+    const name = document.getElementById("name").value;
+    const email = document.getElementById("email").value;
+    const code = document.getElementById("code").value;
+    const responseBox = document.getElementById("response");
+
+    try {
+      const response = await fetch("/check-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, code })
+      });
+
+      const data = await response.json();
+      let message = "";
+
+      if (Array.isArray(data.detail)) {
+        message = data.detail.map(err => err.msg.replace(/^Value error,\s*/i, "")).join("\n");
+        responseBox.className = "error";
+      } else {
+        message = data.msg || data.detail || "Something went wrong.";
+
+        if (message.toLowerCase().includes("already checked in") || message.toLowerCase().includes("invalid")) {
+          responseBox.className = "error";
+        } else {
+          responseBox.className = "";
+        }
+      }
+
+      responseBox.style.display = "block";
+      responseBox.innerText = message;
+
+      if (message.toLowerCase().includes("check-in successful")) {
+        document.getElementById("name").value = "";
+        document.getElementById("email").value = "";
+        document.getElementById("code").value = "";
+      }
+
+      setTimeout(() => {
+        responseBox.style.display = "none";
+      }, 4000);
+
+    } catch (err) {
+      responseBox.style.display = "block";
+      responseBox.innerText = "Check-in failed.";
+      responseBox.className = "error";
+
+      setTimeout(() => {
+        responseBox.style.display = "none";
+      }, 4000);
+    }
+
+    button.disabled = false;
+  }
+  </script>
+</body>
+</html>
